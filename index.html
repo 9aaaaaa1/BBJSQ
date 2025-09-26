@@ -1,195 +1,223 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <title>查  会发财集团手机号匹配工具（支持精确/模糊）</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>📱查   会发财---手机号匹配提取工具</title>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    button { margin-top: 10px; padding: 8px 16px; }
-    select { margin-top: 10px; padding: 5px; }
-    .result-box {
-      white-space: pre-wrap;
-      background: #f9f9f9;
-      padding: 10px;
-      border: 1px solid #ccc;
-      margin-top: 10px;
-      max-height: 200px;
-      overflow-y: auto;
-    }
-    .summary { margin-top: 10px; font-weight: bold; }
-    .dropzone {
-      border: 2px dashed #ccc;
-      padding: 20px;
-      text-align: center;
-      margin-bottom: 10px;
-      cursor: pointer;
-      background: #fafafa;
-    }
-    .dropzone.dragover {
-      background: #e3f2fd;
-      border-color: #2196f3;
-    }
+    body{font-family:sans-serif;max-width:1000px;margin:20px auto;padding:0 15px;}
+    h1{margin-bottom:20px;}
+    .tabs{display:flex;gap:10px;margin-bottom:20px;}
+    .tab{flex:1;text-align:center;padding:10px;background:#f1f1f1;border-radius:6px;cursor:pointer;font-weight:bold;}
+    .tab.active{background:#1a73e8;color:#fff;}
+    .card{border:1px solid #ddd;border-radius:8px;padding:16px;}
+    .btn{padding:8px 14px;background:#1a73e8;color:#fff;border:none;border-radius:6px;cursor:pointer;margin:6px 6px 6px 0;display:inline-block;text-decoration:none;}
+    .btn.disabled{opacity:.5;pointer-events:none;}
+    textarea{width:100%;height:150px;margin-top:10px;}
+    .summary{margin-top:10px;font-weight:bold;}
+    .dropzone{border:2px dashed #ccc;padding:20px;text-align:center;margin:10px 0;cursor:pointer;background:#fafafa;}
+    .dropzone.dragover{background:#e3f2fd;border-color:#2196f3;}
+    .hidden{display:none;}
   </style>
 </head>
 <body>
-  <h2>📄 手机号匹配提取工具</h2>
+  <h1>📱 会发财---手机号匹配提取工具</h1>
 
-  <div class="dropzone" id="drop1">拖拽或点击上传 文件1（查重号码 售后号码）</div>
-  <input type="file" id="file1" style="display:none" accept=".txt">
-
-  <div class="dropzone" id="drop2">拖拽或点击上传 文件2（原号包 ）</div>
-  <input type="file" id="file2" style="display:none" accept=".txt">
-
-  <div style="margin-top:10px;">
-    匹配方式：
-    <select id="matchType">
-      <option value="exact">精确匹配</option>
-      <option value="fuzzy">模糊匹配（前10位）</option>
-    </select>
-    <button onclick="matchData()">开始匹配</button>
-    <button onclick="downloadResult()">下载匹配结果</button>
-    <button onclick="downloadUnmatched()">下载未匹配数据</button>
+  <!-- 顶部 Tab -->
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('part1', this)">文件1 vs 文件2 匹配</div>
+    <div class="tab" onclick="showTab('part2', this)">CSV vs TXT 匹配</div>
+    <div class="tab" onclick="showTab('part3', this)">号段筛选</div>
   </div>
 
-  <div class="summary" id="summary">等待匹配...</div>
+  <!-- Part 1 -->
+  <div id="part1" class="card">
+    <h2>文件1 vs 文件2 匹配（支持精确 / 模糊）</h2>
+    <div class="dropzone" id="drop1">拖拽或点击上传 文件1（查重号码）</div>
+    <input type="file" id="file1" style="display:none" accept=".txt">
+    <div class="dropzone" id="drop2">拖拽或点击上传 文件2（原号包）</div>
+    <input type="file" id="file2" style="display:none" accept=".txt">
+    <div>
+      匹配方式：
+      <select id="matchType">
+        <option value="exact">精确匹配</option>
+        <option value="fuzzy">模糊匹配（前10位）</option>
+      </select>
+      <button class="btn" onclick="matchData()">开始匹配</button>
+      <button class="btn" onclick="downloadResult()">下载匹配结果</button>
+      <button class="btn" onclick="downloadUnmatched()">下载未匹配数据</button>
+    </div>
+    <div id="summary" class="summary">等待匹配...</div>
+    <h3>✅ 匹配结果</h3>
+    <textarea id="matchedBox">--</textarea>
+    <h3>❌ 未匹配结果</h3>
+    <textarea id="unmatchedBox">--</textarea>
+  </div>
 
-  <!-- 匹配结果显示区 -->
-  <h3>✅ 匹配结果</h3>
-  <div id="matchedBox" class="result-box">--</div>
+  <!-- Part 2 -->
+  <div id="part2" class="card hidden">
+    <h2>CSV vs TXT 匹配</h2>
+    <h3>上传 CSV 文件 (含手机号列)</h3>
+    <input id="csvFiles" type="file" accept=".csv,.txt" multiple />
+    <h3>上传 TXT 文件 (数据源)</h3>
+    <input id="txtFiles" type="file" accept=".txt,.csv" multiple />
+    <div>
+      <button id="parseBtn" class="btn">开始匹配</button>
+      <a id="downloadBtn" class="btn disabled" href="#">下载结果 TXT</a>
+    </div>
+    <p id="resultInfo"></p>
+    <textarea id="previewBox" placeholder="结果预览 (前50行)"></textarea>
+  </div>
 
-  <!-- 未匹配结果显示区 -->
-  <h3>❌ 未匹配结果</h3>
-  <div id="unmatchedBox" class="result-box">--</div>
+  <!-- Part 3 -->
+  <div id="part3" class="card hidden">
+    <h2>号段筛选功能</h2>
+    <p>上传一个 TXT 文件，并输入要筛选的号段，例如 <b>255</b>：</p>
+    <input id="segmentFile" type="file" accept=".txt,.csv" />
+    <input id="segmentInput" type="text" placeholder="输入号段 (如 255)" />
+    <div>
+      <button id="segmentBtn" class="btn">筛选号段</button>
+      <a id="downloadSegBtn" class="btn disabled" href="#">下载号段结果</a>
+      <a id="downloadRemainBtn" class="btn disabled" href="#">下载剩余号码</a>
+    </div>
+    <p id="segmentInfo"></p>
+  </div>
 
   <script>
-    let matchedLines = [];
-    let unmatchedLines = [];
+    // Tab 切换
+    function showTab(id, el){
+      document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      el.classList.add('active');
+    }
 
-    function readFile(fileInput) {
-      return new Promise((resolve, reject) => {
-        const file = fileInput.files[0];
-        if (!file) {
-          alert("请选择文件！");
-          return resolve('');
-        }
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = () => reject(reader.error);
-        reader.readAsText(file);
+    // 通用工具
+    function cleanPhone(v){ if(v==null) return ""; return String(v).replace(/\D+/g, ""); }
+    function detectDelimiter(sampleText){
+      const comma=(sampleText.match(/,/g)||[]).length;
+      const tab=(sampleText.match(/\t/g)||[]).length;
+      return (tab>comma) ? "\t" : ",";
+    }
+    function readAsText(file){
+      return new Promise((resolve,reject)=>{
+        const fr=new FileReader();
+        fr.onload=()=>resolve(fr.result);
+        fr.onerror=reject;
+        fr.readAsText(file,'utf-8');
       });
     }
 
-    function setupDropzone(dropId, inputId) {
-      const dropzone = document.getElementById(dropId);
-      const fileInput = document.getElementById(inputId);
-
-      dropzone.addEventListener("click", () => fileInput.click());
-
-      dropzone.addEventListener("dragover", e => {
-        e.preventDefault();
-        dropzone.classList.add("dragover");
+    // ============ Part1 ============
+    let matchedLines=[], unmatchedLines=[];
+    function setupDropzone(dropId, inputId){
+      const dropzone=document.getElementById(dropId);
+      const fileInput=document.getElementById(inputId);
+      dropzone.addEventListener("click",()=>fileInput.click());
+      dropzone.addEventListener("dragover",e=>{e.preventDefault();dropzone.classList.add("dragover");});
+      dropzone.addEventListener("dragleave",()=>dropzone.classList.remove("dragover"));
+      dropzone.addEventListener("drop",e=>{
+        e.preventDefault();dropzone.classList.remove("dragover");
+        const file=e.dataTransfer.files[0];fileInput.files=e.dataTransfer.files;
+        dropzone.textContent=`已上传：${file.name}`;
       });
-
-      dropzone.addEventListener("dragleave", () => {
-        dropzone.classList.remove("dragover");
-      });
-
-      dropzone.addEventListener("drop", e => {
-        e.preventDefault();
-        dropzone.classList.remove("dragover");
-        const file = e.dataTransfer.files[0];
-        fileInput.files = e.dataTransfer.files;
-        dropzone.textContent = `已上传：${file.name}`;
-      });
-
-      fileInput.addEventListener("change", () => {
-        if (fileInput.files.length > 0) {
-          dropzone.textContent = `已上传：${fileInput.files[0].name}`;
-        }
+      fileInput.addEventListener("change",()=>{
+        if(fileInput.files.length>0) dropzone.textContent=`已上传：${fileInput.files[0].name}`;
       });
     }
+    setupDropzone("drop1","file1");
+    setupDropzone("drop2","file2");
 
-    setupDropzone("drop1", "file1");
-    setupDropzone("drop2", "file2");
-
-    async function matchData() {
-      document.getElementById('summary').textContent = '正在匹配，请稍候...';
-      document.getElementById('matchedBox').textContent = '';
-      document.getElementById('unmatchedBox').textContent = '';
-      matchedLines = [];
-      unmatchedLines = [];
-
-      try {
-        const file1Text = await readFile(document.getElementById('file1'));
-        const file2Text = await readFile(document.getElementById('file2'));
-        const matchType = document.getElementById('matchType').value;
-
-        const phones1 = file1Text.split(/\r?\n/).map(line => line.trim().split(',')[0]).filter(x => x);
-        const lines2 = file2Text.split(/\r?\n/).filter(line => line.trim());
-
-        let set1;
-        if (matchType === 'fuzzy') {
-          set1 = new Set(phones1.map(p => p.slice(0, 10)));
-        } else {
-          set1 = new Set(phones1);
-        }
-
-        matchedLines = lines2.filter(line => {
-          const key = matchType === 'fuzzy'
-            ? line.split(',')[0].slice(0, 10)
-            : line.split(',')[0];
+    async function matchData(){
+      document.getElementById('summary').textContent='正在匹配...';
+      document.getElementById('matchedBox').value='';
+      document.getElementById('unmatchedBox').value='';
+      matchedLines=[];unmatchedLines=[];
+      try{
+        const file1Text=await readAsText(document.getElementById('file1').files[0]);
+        const file2Text=await readAsText(document.getElementById('file2').files[0]);
+        const matchType=document.getElementById('matchType').value;
+        const phones1=file1Text.split(/\r?\n/).map(l=>l.trim().split(',')[0]).filter(x=>x);
+        const lines2=file2Text.split(/\r?\n/).filter(l=>l.trim());
+        let set1=new Set(matchType==='fuzzy'?phones1.map(p=>p.slice(0,10)):phones1);
+        matchedLines=lines2.filter(line=>{
+          const key=matchType==='fuzzy'?line.split(',')[0].slice(0,10):line.split(',')[0];
           return set1.has(key);
         });
-
-        unmatchedLines = lines2.filter(line => {
-          const key = matchType === 'fuzzy'
-            ? line.split(',')[0].slice(0, 10)
-            : line.split(',')[0];
+        unmatchedLines=lines2.filter(line=>{
+          const key=matchType==='fuzzy'?line.split(',')[0].slice(0,10):line.split(',')[0];
           return !set1.has(key);
         });
-
-        const countMatched = matchedLines.length;
-        const countUnmatched = unmatchedLines.length;
-
-        document.getElementById('summary').textContent = 
-          `✅ 匹配到 ${countMatched} 条记录，未匹配 ${countUnmatched} 条`;
-
-        document.getElementById('matchedBox').textContent = matchedLines.join('\n') || '--';
-        document.getElementById('unmatchedBox').textContent = unmatchedLines.join('\n') || '--';
-
-      } catch (e) {
-        console.error(e);
-        document.getElementById('summary').textContent = '❌ 匹配失败，请查看控制台';
-      }
+        document.getElementById('summary').textContent=`匹配到 ${matchedLines.length} 条，未匹配 ${unmatchedLines.length} 条`;
+        document.getElementById('matchedBox').value=matchedLines.join("\n")||"--";
+        document.getElementById('unmatchedBox').value=unmatchedLines.join("\n")||"--";
+      }catch(e){console.error(e);document.getElementById('summary').textContent='匹配失败';}
+    }
+    function downloadResult(){
+      if(matchedLines.length===0){alert('无匹配结果');return;}
+      const blob=new Blob([matchedLines.join('\n')],{type:'text/plain'});
+      const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+      a.download='匹配结果.txt';a.click();URL.revokeObjectURL(a.href);
+    }
+    function downloadUnmatched(){
+      if(unmatchedLines.length===0){alert('无未匹配数据');return;}
+      const blob=new Blob([unmatchedLines.join('\n')],{type:'text/plain'});
+      const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+      a.download='未匹配数据.txt';a.click();URL.revokeObjectURL(a.href);
     }
 
-    function downloadResult() {
-      if (matchedLines.length === 0) {
-        alert('无匹配结果，无法下载');
-        return;
+    // ============ Part2 ============
+    let csvPhonesSet=new Set(), txtRows=[], matchedRows=[];
+    async function handleCSV(){
+      csvPhonesSet.clear(); if(!csvFiles.files?.length) return;
+      for(const file of csvFiles.files){
+        const text=await readAsText(file);
+        const parsed=Papa.parse(text,{header:true,skipEmptyLines:true});
+        const headers=parsed.meta.fields;
+        const phoneCol=headers.find(h=>h.includes("手机号")||h.toLowerCase().includes("phone"))||headers[0];
+        parsed.data.forEach(row=>{const ph=cleanPhone(row[phoneCol]);if(ph)csvPhonesSet.add(ph);});
       }
-      const blob = new Blob([matchedLines.join('\n')], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = '匹配结果.txt';
-      a.click();
-      URL.revokeObjectURL(url);
+      resultInfo.textContent=`已加载 ${csvFiles.files.length} 个 CSV，共提取 ${csvPhonesSet.size} 个手机号`;
     }
+    async function handleTXT(){
+      txtRows=[]; if(!txtFiles.files?.length) return;
+      for(const file of txtFiles.files){
+        const text=await readAsText(file);
+        const delim=detectDelimiter(text.slice(0,2000));
+        const parsed=Papa.parse(text,{header:false,delimiter:delim,skipEmptyLines:true});
+        parsed.data.forEach(r=>txtRows.push(r));
+      }
+      resultInfo.textContent=`已加载 ${txtFiles.files.length} 个 TXT，总行数 ${txtRows.length}`;
+    }
+    parseBtn.addEventListener('click',()=>{
+      matchedRows=[];txtRows.forEach(r=>{const phone=cleanPhone(r[0]);if(csvPhonesSet.has(phone))matchedRows.push(r);});
+      const lines=matchedRows.map(r=>r.join(","));
+      const blob=new Blob([lines.join("\n")],{type:'text/plain;charset=utf-8'});
+      const url=URL.createObjectURL(blob);downloadBtn.href=url;
+      downloadBtn.download=`matched_phone_data_${Date.now()}.txt`;downloadBtn.classList.remove('disabled');
+      resultInfo.textContent=`匹配完成：${matchedRows.length} 行`;previewBox.value=lines.slice(0,50).join("\n");
+    });
+    csvFiles.addEventListener('change',handleCSV);
+    txtFiles.addEventListener('change',handleTXT);
 
-    function downloadUnmatched() {
-      if (unmatchedLines.length === 0) {
-        alert('无未匹配数据，无法下载');
-        return;
-      }
-      const blob = new Blob([unmatchedLines.join('\n')], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = '未匹配数据.txt';
-      a.click();
-      URL.revokeObjectURL(url);
-    }
+    // ============ Part3 ============
+    segmentBtn.addEventListener('click',async()=>{
+      if(!segmentFile.files?.length){alert('请先选择一个TXT文件');return;}
+      const text=await readAsText(segmentFile.files[0]);
+      const delim=detectDelimiter(text.slice(0,2000));
+      const parsed=Papa.parse(text,{header:false,delimiter:delim,skipEmptyLines:true});
+      const rows=parsed.data;const seg=segmentInput.value.trim();
+      if(!seg){alert('请输入号段');return;}
+      let matched=[],remain=[];
+      rows.forEach(r=>{const ph=cleanPhone(r[0]);if(ph.startsWith(seg))matched.push(r);else remain.push(r);});
+      const matchedLines=matched.map(r=>r.join(",")), remainLines=remain.map(r=>r.join(","));
+      const blob1=new Blob([matchedLines.join("\n")],{type:'text/plain;charset=utf-8'});
+      const blob2=new Blob([remainLines.join("\n")],{type:'text/plain;charset=utf-8'});
+      downloadSegBtn.href=URL.createObjectURL(blob1);downloadSegBtn.download=`segment_${seg}_${matched.length}_${Date.now()}.txt`;downloadSegBtn.textContent=`下载号段结果 (${matched.length} 行)`;downloadSegBtn.classList.remove('disabled');
+      downloadRemainBtn.href=URL.createObjectURL(blob2);downloadRemainBtn.download=`remain_except_${seg}_${remain.length}_${Date.now()}.txt`;downloadRemainBtn.textContent=`下载剩余号码 (${remain.length} 行)`;downloadRemainBtn.classList.remove('disabled');
+      segmentInfo.textContent=`筛选完成：号段 ${seg} → ${matched.length} 行；剩余 ${remain.length} 行`;
+    });
   </script>
 </body>
 </html>
