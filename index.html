@@ -7,7 +7,15 @@
     body { font-family: Arial, sans-serif; margin: 20px; }
     button { margin-top: 10px; padding: 8px 16px; }
     select { margin-top: 10px; padding: 5px; }
-    #result { white-space: pre-wrap; background: #f9f9f9; padding: 10px; border: 1px solid #ccc; margin-top: 10px; max-height: 400px; overflow-y: auto; }
+    .result-box {
+      white-space: pre-wrap;
+      background: #f9f9f9;
+      padding: 10px;
+      border: 1px solid #ccc;
+      margin-top: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
     .summary { margin-top: 10px; font-weight: bold; }
     .dropzone {
       border: 2px dashed #ccc;
@@ -39,14 +47,23 @@
       <option value="fuzzy">模糊匹配（前10位）</option>
     </select>
     <button onclick="matchData()">开始匹配</button>
-    <button onclick="downloadResult()">下载结果</button>
+    <button onclick="downloadResult()">下载匹配结果</button>
+    <button onclick="downloadUnmatched()">下载未匹配数据</button>
   </div>
 
   <div class="summary" id="summary">等待匹配...</div>
-  <div id="result">--</div>
+
+  <!-- 匹配结果显示区 -->
+  <h3>✅ 匹配结果</h3>
+  <div id="matchedBox" class="result-box">--</div>
+
+  <!-- 未匹配结果显示区 -->
+  <h3>❌ 未匹配结果</h3>
+  <div id="unmatchedBox" class="result-box">--</div>
 
   <script>
     let matchedLines = [];
+    let unmatchedLines = [];
 
     function readFile(fileInput) {
       return new Promise((resolve, reject) => {
@@ -97,42 +114,48 @@
 
     async function matchData() {
       document.getElementById('summary').textContent = '正在匹配，请稍候...';
-      document.getElementById('result').textContent = '';
+      document.getElementById('matchedBox').textContent = '';
+      document.getElementById('unmatchedBox').textContent = '';
       matchedLines = [];
+      unmatchedLines = [];
 
       try {
         const file1Text = await readFile(document.getElementById('file1'));
         const file2Text = await readFile(document.getElementById('file2'));
         const matchType = document.getElementById('matchType').value;
 
-        // 文本1：取每行第一个逗号前手机号
         const phones1 = file1Text.split(/\r?\n/).map(line => line.trim().split(',')[0]).filter(x => x);
-        // 文本2：每行完整
         const lines2 = file2Text.split(/\r?\n/).filter(line => line.trim());
 
-        let set2;
+        let set1;
         if (matchType === 'fuzzy') {
-          set2 = new Set(lines2.map(line => line.split(',')[0].slice(0, 10)));
+          set1 = new Set(phones1.map(p => p.slice(0, 10)));
         } else {
-          set2 = new Set(lines2.map(line => line.split(',')[0]));
+          set1 = new Set(phones1);
         }
 
         matchedLines = lines2.filter(line => {
           const key = matchType === 'fuzzy'
             ? line.split(',')[0].slice(0, 10)
             : line.split(',')[0];
-          return set2.has(key) && phones1.some(p => {
-            return matchType === 'fuzzy'
-              ? p.slice(0, 10) === key
-              : p === key;
-          });
+          return set1.has(key);
         });
 
-        const count = matchedLines.length;
-        document.getElementById('summary').textContent = count > 0
-          ? `✅ 共匹配到 ${count} 条记录`
-          : '❌ 未找到匹配记录';
-        document.getElementById('result').textContent = matchedLines.join('\n') || '--';
+        unmatchedLines = lines2.filter(line => {
+          const key = matchType === 'fuzzy'
+            ? line.split(',')[0].slice(0, 10)
+            : line.split(',')[0];
+          return !set1.has(key);
+        });
+
+        const countMatched = matchedLines.length;
+        const countUnmatched = unmatchedLines.length;
+
+        document.getElementById('summary').textContent = 
+          `✅ 匹配到 ${countMatched} 条记录，未匹配 ${countUnmatched} 条`;
+
+        document.getElementById('matchedBox').textContent = matchedLines.join('\n') || '--';
+        document.getElementById('unmatchedBox').textContent = unmatchedLines.join('\n') || '--';
 
       } catch (e) {
         console.error(e);
@@ -153,8 +176,20 @@
       a.click();
       URL.revokeObjectURL(url);
     }
+
+    function downloadUnmatched() {
+      if (unmatchedLines.length === 0) {
+        alert('无未匹配数据，无法下载');
+        return;
+      }
+      const blob = new Blob([unmatchedLines.join('\n')], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '未匹配数据.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
   </script>
 </body>
 </html>
-
-
