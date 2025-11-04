@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>📱 会发财---手机号匹配提取工具</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <!-- ✅ 新增 XLSX 支持 -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     body{font-family:sans-serif;max-width:1000px;margin:20px auto;padding:0 15px;}
     h1{margin-bottom:20px;}
@@ -57,9 +59,9 @@
 
   <!-- Part 2 -->
   <div id="part2" class="card hidden">
-    <h2>CSV vs TXT 匹配</h2>
-    <h3>上传 CSV 文件 (含手机号列)</h3>
-    <input id="csvFiles" type="file" accept=".csv,.txt" multiple />
+    <h2>CSV / XLSX vs TXT 匹配</h2>
+    <h3>上传售后文件 (含手机号列)</h3>
+    <input id="csvFiles" type="file" accept=".csv,.txt,.xlsx" multiple />
     <h3>上传 TXT 文件 (数据源)</h3>
     <input id="txtFiles" type="file" accept=".txt,.csv" multiple />
     <div>
@@ -68,8 +70,7 @@
     </div>
     <p id="resultInfo"></p>
 
-    <!-- CSV 内部重复号码显示 -->
-    <h3>⚠️ CSV 内部重复号码</h3>
+    <h3>⚠️ CSV/XLSX 内部重复号码</h3>
     <textarea id="duplicateBox" placeholder="这里显示重复手机号 (如有)"></textarea>
 
     <h3>✅ 匹配结果预览 (前50行)</h3>
@@ -115,7 +116,7 @@
       });
     }
 
-    // ============ Part1 ============
+    // ============ Part1 ============（原样不动）
     let matchedLines=[], unmatchedLines=[];
     function setupDropzone(dropId, inputId){
       const dropzone=document.getElementById(dropId);
@@ -173,29 +174,50 @@
       a.download='未匹配数据.txt';a.click();URL.revokeObjectURL(a.href);
     }
 
-    // ============ Part2 ============
+    // ============ Part2 ============（增加 XLSX 支持）
     let csvPhonesSet=new Set(), txtRows=[], matchedRows=[];
     async function handleCSV(){
       csvPhonesSet.clear();
       if(!csvFiles.files?.length) return;
       let phoneList=[], duplicateList=[];
+
       for(const file of csvFiles.files){
-        const text=await readAsText(file);
-        const parsed=Papa.parse(text,{header:true,skipEmptyLines:true});
-        const headers=parsed.meta.fields;
-        const phoneCol=headers.find(h=>h.includes("手机号")||h.toLowerCase().includes("phone"))||headers[0];
-        parsed.data.forEach(row=>{
-          const ph=cleanPhone(row[phoneCol]);
-          if(ph){
-            if(csvPhonesSet.has(ph)) duplicateList.push(ph);
-            csvPhonesSet.add(ph);
-            phoneList.push(ph);
+        const ext=file.name.split('.').pop().toLowerCase();
+
+        // ✅ 识别并解析 XLSX 文件
+        if(ext==="xlsx"){
+          const data = await file.arrayBuffer();
+          const workbook = XLSX.read(data, { type: "array" });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const json = XLSX.utils.sheet_to_json(sheet, { header: 1 }); // 以二维数组形式返回
+          for(let i=1;i<json.length;i++){ // 跳过首行
+            const ph=cleanPhone(json[i][0]);
+            if(ph){
+              if(csvPhonesSet.has(ph)) duplicateList.push(ph);
+              csvPhonesSet.add(ph);
+              phoneList.push(ph);
+            }
           }
-        });
+        }else{
+          // 原有 CSV/TXT 处理逻辑
+          const text=await readAsText(file);
+          const parsed=Papa.parse(text,{header:true,skipEmptyLines:true});
+          const headers=parsed.meta.fields;
+          const phoneCol=headers.find(h=>h.includes("手机号")||h.toLowerCase().includes("phone"))||headers[0];
+          parsed.data.forEach(row=>{
+            const ph=cleanPhone(row[phoneCol]);
+            if(ph){
+              if(csvPhonesSet.has(ph)) duplicateList.push(ph);
+              csvPhonesSet.add(ph);
+              phoneList.push(ph);
+            }
+          });
+        }
       }
+
       const duplicateCount=duplicateList.length;
       document.getElementById('duplicateBox').value = duplicateCount>0 ? duplicateList.join("\n") : "无重复手机号";
-      resultInfo.textContent=`已加载 ${csvFiles.files.length} 个 CSV，共提取 ${csvPhonesSet.size} 个唯一手机号，发现 ${duplicateCount} 个重复手机号`;
+      resultInfo.textContent=`已加载 ${csvFiles.files.length} 个文件，共提取 ${csvPhonesSet.size} 个唯一手机号，发现 ${duplicateCount} 个重复手机号`;
     }
 
     async function handleTXT(){
@@ -229,7 +251,7 @@
     csvFiles.addEventListener('change',handleCSV);
     txtFiles.addEventListener('change',handleTXT);
 
-    // ============ Part3 ============
+    // ============ Part3 ============（原样不动）
     segmentBtn.addEventListener('click',async()=>{
       if(!segmentFile.files?.length){alert('请先选择一个TXT文件');return;}
       const text=await readAsText(segmentFile.files[0]);
