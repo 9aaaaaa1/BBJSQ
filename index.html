@@ -45,7 +45,7 @@
     <div>账号：<b id="userEmail">--</b>　剩余积分：<b id="creditBalance">--</b></div>
     <div class="account-actions">
       <button id="historyToggle" class="btn small-btn" type="button">积分消费明细</button>
-      <button id="filesToggle" class="btn small-btn" type="button">文件档案</button>
+      <button id="filesToggle" class="btn small-btn hidden" type="button">文件档案</button>
       <button id="adminToggle" class="btn small-btn hidden" type="button">管理员后台</button>
       <button id="logoutBtn" class="btn small-btn" type="button">退出登录</button>
     </div>
@@ -183,6 +183,7 @@
       isAdmin=currentUser.app_metadata?.role==='admin';
       document.getElementById('userEmail').textContent=currentUser.email||'已登录用户';
       document.getElementById('adminToggle').classList.toggle('hidden',!isAdmin);
+document.getElementById('filesToggle').classList.toggle('hidden',!isAdmin);
       showTool(); await refreshBalance();
     }
     document.getElementById('loginBtn').addEventListener('click',async()=>{
