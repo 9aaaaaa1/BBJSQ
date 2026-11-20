@@ -25,7 +25,7 @@
     .account-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
     .small-btn{padding:6px 10px;margin:0;font-size:13px;}
     .auth-mask{position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;}
-.auth-mask.hidden{display:none;}
+    .auth-mask.hidden{display:none;}
     .auth-card{background:#fff;border-radius:10px;padding:22px;width:min(380px,100%);box-shadow:0 8px 32px #0003;}
     .auth-card input,.admin-panel input{box-sizing:border-box;width:100%;padding:10px;margin:7px 0;border:1px solid #ccc;border-radius:6px;}
     .admin-panel{margin:12px 0 18px;padding:16px;border:1px solid #1a73e8;border-radius:8px;background:#f8fbff;}
@@ -42,6 +42,7 @@
   <div id="accountBar" class="account-bar hidden">
     <div>账号：<b id="userEmail">--</b>　剩余积分：<b id="creditBalance">--</b></div>
     <div class="account-actions">
+      <button id="historyToggle" class="btn small-btn" type="button">积分消费明细</button>
       <button id="adminToggle" class="btn small-btn hidden" type="button">管理员后台</button>
       <button id="logoutBtn" class="btn small-btn" type="button">退出登录</button>
     </div>
@@ -72,6 +73,17 @@
     <div style="margin-top:14px"><b>用户积分</b> <button id="refreshUsers" class="btn small-btn" type="button">刷新列表</button></div>
     <div style="overflow-x:auto"><table class="admin-table"><thead><tr><th>用户</th><th>剩余积分</th><th>充值积分</th><th>操作</th></tr></thead><tbody id="userRows"><tr><td colspan="4">加载中...</td></tr></tbody></table></div>
     <p id="adminMessage" style="font-size:13px;color:#166534"></p>
+  </div>
+
+  <div id="historyPanel" class="admin-panel hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <h2 style="margin:0">积分消费明细</h2>
+      <div><button id="refreshHistory" class="btn small-btn" type="button">刷新明细</button>
+      <button id="closeHistory" class="btn small-btn" type="button">收起</button></div>
+    </div>
+    <p id="historyDescription" style="font-size:13px;color:#555">这里只显示当前账号的积分充值和消费记录。</p>
+    <div style="overflow-x:auto"><table class="admin-table"><thead><tr id="historyHead"><th>时间</th><th>类型</th><th>积分变化</th><th>变动后余额</th><th>说明</th></tr></thead><tbody id="historyRows"><tr><td colspan="5">点击刷新明细</td></tr></tbody></table></div>
+    <p id="historyMessage" style="font-size:13px;color:#b45309"></p>
   </div>
 
   <div class="tabs">
@@ -124,6 +136,7 @@
     // ===== Supabase 配置：部署前替换为你自己的项目 URL 和 anon key =====
     const SUPABASE_URL = 'https://tdzxaupycwozrudgnepg.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_JaOj_TzBaz3PpdWA1UzmLQ__9YOn8Sa';
+
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentUser = null;
     let isAdmin = false;
@@ -133,6 +146,7 @@
       document.getElementById('accountBar').classList.add('hidden');
       document.getElementById('authMessage').textContent=message;
       document.getElementById('adminPanel').classList.add('hidden');
+      document.getElementById('historyPanel').classList.add('hidden');
       document.querySelectorAll('.tabs,.card').forEach(el=>el.classList.add('hidden'));
     }
     function showTool(){
@@ -221,6 +235,56 @@
       const {error}=await supabaseClient.rpc('admin_set_costs',{p_match_cost:match,p_segment_cost:segment});
       document.getElementById('adminMessage').textContent=error?'保存失败：'+error.message:'扣分规则已保存';
     });
+
+    // ==== 积分明细：普通用户仅看自己的，管理员可看全部用户 ==== 
+    document.getElementById('historyToggle').addEventListener('click', async()=>{
+      const panel=document.getElementById('historyPanel');
+      panel.classList.toggle('hidden');
+      if(!panel.classList.contains('hidden')) await loadCreditHistory();
+    });
+    document.getElementById('closeHistory').addEventListener('click',()=>document.getElementById('historyPanel').classList.add('hidden'));
+    document.getElementById('refreshHistory').addEventListener('click',loadCreditHistory);
+
+    function historyFeatureName(feature){
+      if(feature==='match') return '通用匹配';
+      if(feature==='segment') return '号段筛选';
+      if(feature==='admin') return '管理员充值';
+      return feature||'积分变动';
+    }
+    async function loadCreditHistory(){
+      const body=document.getElementById('historyRows');
+      const msg=document.getElementById('historyMessage');
+      const head=document.getElementById('historyHead');
+      const desc=document.getElementById('historyDescription');
+      body.innerHTML='<tr><td colspan="6">正在加载...</td></tr>'; msg.textContent='';
+      let rows=[],error=null;
+      if(isAdmin){
+        desc.textContent='管理员视图：查看所有用户最近 500 条积分变动记录。';
+        head.innerHTML='<th>时间</th><th>用户</th><th>类型</th><th>积分变化</th><th>变动后余额</th><th>说明</th>';
+        const result=await supabaseClient.rpc('admin_list_credit_ledger');
+        rows=result.data||[]; error=result.error;
+      }else{
+        desc.textContent='这里只显示当前账号的积分充值和消费记录。';
+        head.innerHTML='<th>时间</th><th>类型</th><th>积分变化</th><th>变动后余额</th><th>说明</th>';
+        const result=await supabaseClient.from('credit_ledger').select('id,amount,balance_after,feature,note,created_at').eq('user_id',currentUser.id).order('created_at',{ascending:false}).limit(500);
+        rows=result.data||[]; error=result.error;
+      }
+      if(error){body.innerHTML='<tr><td colspan="6">加载失败</td></tr>';msg.textContent='加载失败：'+error.message;return;}
+      body.innerHTML='';
+      if(!rows.length){body.innerHTML=`<tr><td colspan="${isAdmin?6:5}">暂无积分记录</td></tr>`;return;}
+      rows.forEach(item=>{
+        const tr=document.createElement('tr');
+        const cells=[];
+        cells.push(new Date(item.created_at).toLocaleString());
+        if(isAdmin) cells.push(item.email||item.user_id||'未知用户');
+        cells.push(historyFeatureName(item.feature));
+        cells.push((Number(item.amount)>0?'+':'')+item.amount);
+        cells.push(item.balance_after);
+        cells.push(item.note||'--');
+        cells.forEach(value=>{const td=document.createElement('td');td.textContent=value;tr.appendChild(td);});
+        body.appendChild(tr);
+      });
+    }
 
     // ==== 通用函数 ====
     function showTab(id, el){
