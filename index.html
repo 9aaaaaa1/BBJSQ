@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>查 📱 会发财---手机号匹配提取工具</title>
+  <title>查 � 会发财---手机号匹配提取工具</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -32,17 +32,20 @@
     .admin-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px;}
     .admin-table th,.admin-table td{border-bottom:1px solid #ddd;padding:8px;text-align:left;}
     .admin-table input{width:90px;padding:6px;margin:0;}
+    .file-actions{display:flex;gap:6px;flex-wrap:wrap}
+    .file-actions .btn{margin:2px}
     @media(max-width:600px){.admin-table{font-size:12px}.admin-table th,.admin-table td{padding:5px}}
 
   </style>
 </head>
 <body>
-  <h1>📱 会发财---手机号通用匹配提取工具</h1>
+  <h1>� 会发财---手机号通用匹配提取工具</h1>
 
   <div id="accountBar" class="account-bar hidden">
     <div>账号：<b id="userEmail">--</b>　剩余积分：<b id="creditBalance">--</b></div>
     <div class="account-actions">
       <button id="historyToggle" class="btn small-btn" type="button">积分消费明细</button>
+      <button id="filesToggle" class="btn small-btn" type="button">文件档案</button>
       <button id="adminToggle" class="btn small-btn hidden" type="button">管理员后台</button>
       <button id="logoutBtn" class="btn small-btn" type="button">退出登录</button>
     </div>
@@ -84,6 +87,16 @@
     <p id="historyDescription" style="font-size:13px;color:#555">这里只显示当前账号的积分充值和消费记录。</p>
     <div style="overflow-x:auto"><table class="admin-table"><thead><tr id="historyHead"><th>时间</th><th>类型</th><th>积分变化</th><th>变动后余额</th><th>说明</th></tr></thead><tbody id="historyRows"><tr><td colspan="5">点击刷新明细</td></tr></tbody></table></div>
     <p id="historyMessage" style="font-size:13px;color:#b45309"></p>
+  </div>
+
+  <div id="filesPanel" class="admin-panel hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <h2 style="margin:0">文件档案</h2>
+      <div><button id="refreshFiles" class="btn small-btn" type="button">刷新档案</button><button id="closeFiles" class="btn small-btn" type="button">收起</button></div>
+    </div>
+    <p id="filesDescription" style="font-size:13px;color:#555">原始文件和处理结果均保存到云端。普通用户只能查看、下载和删除自己的档案；管理员可以查看、下载和删除所有用户的档案。</p>
+    <div style="overflow-x:auto"><table class="admin-table"><thead><tr><th>时间</th><th>用户</th><th>档案名称</th><th>原始文件</th><th>处理结果</th><th>操作</th></tr></thead><tbody id="fileRows"><tr><td colspan="6">点击刷新档案</td></tr></tbody></table></div>
+    <p id="filesMessage" style="font-size:13px;color:#b45309"></p>
   </div>
 
   <div class="tabs">
@@ -134,7 +147,7 @@
 
   <script>
     // ===== Supabase 配置：部署前替换为你自己的项目 URL 和 anon key =====
-    const SUPABASE_URL = 'https://tdzxaupycwozrudgnepg.supabase.co';
+  const SUPABASE_URL = 'https://tdzxaupycwozrudgnepg.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_JaOj_TzBaz3PpdWA1UzmLQ__9YOn8Sa';
 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -147,6 +160,7 @@
       document.getElementById('authMessage').textContent=message;
       document.getElementById('adminPanel').classList.add('hidden');
       document.getElementById('historyPanel').classList.add('hidden');
+      document.getElementById('filesPanel').classList.add('hidden');
       document.querySelectorAll('.tabs,.card').forEach(el=>el.classList.add('hidden'));
     }
     function showTool(){
@@ -286,6 +300,64 @@
       });
     }
 
+    // ==== 云端文件档案：原始文件 + 处理结果 ====
+    const FILE_BUCKET='user-files';
+    function safeFileName(name){return String(name||'file').replace(/[^\w.\-\u4e00-\u9fa5]/g,'_').slice(0,120)||'file';}
+    async function archiveOperation(title, rawFiles, outputs){
+      if(!currentUser) return;
+      const recordId=crypto.randomUUID();
+      const base=currentUser.id+'/'+recordId+'/';
+      const rawPaths=[], processedPaths=[];
+      try{
+        for(const file of rawFiles){
+          const path=base+'raw/'+safeFileName(file.name);
+          const {error}=await supabaseClient.storage.from(FILE_BUCKET).upload(path,file,{upsert:false,contentType:file.type||'application/octet-stream'});
+          if(error) throw error;
+          rawPaths.push(path);
+        }
+        for(const output of outputs){
+          const path=base+'processed/'+safeFileName(output.name);
+          const blob=output.blob instanceof Blob?output.blob:new Blob([output.content||''],{type:'text/plain;charset=utf-8'});
+          const {error}=await supabaseClient.storage.from(FILE_BUCKET).upload(path,blob,{upsert:false,contentType:blob.type||'text/plain'});
+          if(error) throw error;
+          processedPaths.push(path);
+        }
+        const {error:dbError}=await supabaseClient.from('file_archives').insert({id:recordId,user_id:currentUser.id,title,raw_paths:rawPaths,processed_paths:processedPaths,raw_names:rawFiles.map(f=>f.name),processed_names:outputs.map(o=>o.name)});
+        if(dbError) throw dbError;
+        return true;
+      }catch(err){
+        const all=[...rawPaths,...processedPaths];
+        if(all.length) await supabaseClient.storage.from(FILE_BUCKET).remove(all);
+        console.error('文件云端归档失败',err);
+        alert('文件处理完成，但云端归档失败：'+err.message+'。请检查是否已执行文件档案 SQL，以及 Storage 配置。');
+        return false;
+      }
+    }
+    document.getElementById('filesToggle').addEventListener('click',async()=>{
+      const panel=document.getElementById('filesPanel');panel.classList.toggle('hidden');
+      if(!panel.classList.contains('hidden')) await loadFileArchives();
+    });
+    document.getElementById('closeFiles').addEventListener('click',()=>document.getElementById('filesPanel').classList.add('hidden'));
+    document.getElementById('refreshFiles').addEventListener('click',loadFileArchives);
+    async function loadFileArchives(){
+      const body=document.getElementById('fileRows'),msg=document.getElementById('filesMessage');
+      body.innerHTML='<tr><td colspan="6">正在加载...</td></tr>';msg.textContent='';
+      let rows,error;
+      if(isAdmin){const r=await supabaseClient.rpc('admin_list_file_archives');rows=r.data;error=r.error;document.getElementById('filesDescription').textContent='管理员专属视图：可以查看、下载和删除所有用户的文件档案。普通用户无法访问其他用户的档案。';}
+      else{const r=await supabaseClient.from('file_archives').select('*').order('created_at',{ascending:false}).limit(500);rows=r.data;error=r.error;document.getElementById('filesDescription').textContent='这里只显示你自己的文件档案。其他用户的文件对你不可见；原始文件和处理结果保存在云端，直到手动删除。';}
+      if(error){body.innerHTML='<tr><td colspan="6">加载失败</td></tr>';msg.textContent='加载失败：'+error.message;return;}
+      body.innerHTML='';if(!rows?.length){body.innerHTML='<tr><td colspan="6">暂无文件档案。完成一次匹配或号段筛选后，会自动保存。</td></tr>';return;}
+      rows.forEach(row=>{
+        const tr=document.createElement('tr');
+        const vals=[new Date(row.created_at).toLocaleString(),row.email||'本人',row.title||'文件处理', (row.raw_names||[]).join('、')||'无', (row.processed_names||[]).join('、')||'尚无'];
+        vals.forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.appendChild(td);});
+        const actions=document.createElement('td');actions.className='file-actions';
+        const paths=[...(row.raw_paths||[]),...(row.processed_paths||[])];
+        paths.forEach((path,i)=>{const names=[...(row.raw_names||[]),...(row.processed_names||[])];const b=document.createElement('button');b.className='btn small-btn';b.textContent='下载 '+(names[i]||('文件'+(i+1)));b.addEventListener('click',async()=>{const {data,error}=await supabaseClient.storage.from(FILE_BUCKET).createSignedUrl(path,60);if(error){alert('下载链接生成失败：'+error.message);return;}window.open(data.signedUrl,'_blank','noopener');});actions.appendChild(b);});
+        const del=document.createElement('button');del.className='btn small-btn';del.style.background='#b42318';del.textContent='删除档案';del.addEventListener('click',async()=>{if(!confirm('确定删除这条档案的原始文件和处理结果吗？此操作不可恢复。'))return;del.disabled=true;const {error:storageError}=paths.length?await supabaseClient.storage.from(FILE_BUCKET).remove(paths):{error:null};if(storageError){alert('文件删除失败：'+storageError.message);del.disabled=false;return;}const {error:dbError}=await supabaseClient.from('file_archives').delete().eq('id',row.id);if(dbError){alert('档案记录删除失败：'+dbError.message);del.disabled=false;return;}await loadFileArchives();});actions.appendChild(del);tr.appendChild(actions);body.appendChild(tr);
+      });
+    }
+
     // ==== 通用函数 ====
     function showTab(id, el){
       document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
@@ -352,6 +424,10 @@
       }else{
         await matchMode_TableVsTxt(filesA,filesB);
       }
+      await archiveOperation('通用匹配 - '+new Date().toLocaleString(),[...filesA,...filesB],[
+        {name:'匹配结果.txt',content:matchedLines.join('\n')},
+        {name:'未匹配数据.txt',content:unmatchedLines.join('\n')}
+      ]);
     }
 
     // ==== 模式1：文件1 vs 文件2 ====
@@ -468,6 +544,7 @@
       downloadRemainBtn.textContent=`下载剩余号码 (${remain.length} 行)`;
       downloadRemainBtn.classList.remove('disabled');
       segmentInfo.textContent=`筛选完成：号段 ${seg} → ${matched.length} 行；剩余 ${remain.length} 行`;
+      await archiveOperation('号段筛选 '+seg+' - '+new Date().toLocaleString(),[segmentFile.files[0]],[{name:`号段结果_${seg}.txt`,content:matched.map(r=>r.join(',')).join('\n')},{name:`剩余号码_${seg}.txt`,content:remain.map(r=>r.join(',')).join('\n')}]);
     });
   </script>
 </body>
