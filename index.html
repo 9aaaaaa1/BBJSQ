@@ -344,7 +344,7 @@
       body.innerHTML='<tr><td colspan="6">正在加载...</td></tr>';msg.textContent='';
       let rows,error;
       if(isAdmin){const r=await supabaseClient.rpc('admin_list_file_archives');rows=r.data;error=r.error;document.getElementById('filesDescription').textContent='管理员专属视图：可以查看、下载和删除所有用户的文件档案。普通用户无法访问其他用户的档案。';}
-      else{const r=await supabaseClient.from('file_archives').select('*').order('created_at',{ascending:false}).limit(500);rows=r.data;error=r.error;document.getElementById('filesDescription').textContent='这里只显示你自己的文件档案。其他用户的文件对你不可见；原始文件和处理结果保存在云端，直到手动删除。';}
+      else{const r=await supabaseClient.from('file_archives').select('*').order('created_at',{ascending:false}).limit(500);rows=r.data;error=r.error;document.getElementById('filesDescription').textContent='新。';}
       if(error){body.innerHTML='<tr><td colspan="6">加载失败</td></tr>';msg.textContent='加载失败：'+error.message;return;}
       body.innerHTML='';if(!rows?.length){body.innerHTML='<tr><td colspan="6">暂无文件档案。完成一次匹配或号段筛选后，会自动保存。</td></tr>';return;}
       rows.forEach(row=>{
