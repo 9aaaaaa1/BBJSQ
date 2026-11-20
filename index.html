@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>查 � 会发财---手机号匹配提取工具</title>
+  <title>查   会发财---手机号匹配提取工具</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -39,7 +39,7 @@
   </style>
 </head>
 <body>
-  <h1>� 会发财---手机号通用匹配提取工具</h1>
+  <h1>  会发财---手机号通用匹配提取工具</h1>
 
   <div id="accountBar" class="account-bar hidden">
     <div>账号：<b id="userEmail">--</b>　剩余积分：<b id="creditBalance">--</b></div>
@@ -302,7 +302,23 @@
 
     // ==== 云端文件档案：原始文件 + 处理结果 ====
     const FILE_BUCKET='user-files';
-    function safeFileName(name){return String(name||'file').replace(/[^\w.\-\u4e00-\u9fa5]/g,'_').slice(0,120)||'file';}
+    // Storage 对象键使用纯 ASCII 文件名，原始中文名称仍保存在数据库
+function safeFileName(name){
+  const original = String(name || 'file').split(/[\\/]/).pop();
+  const dot = original.lastIndexOf('.');
+  let ext = dot > 0 ? original.slice(dot).toLowerCase() : '';
+  let stem = dot > 0 ? original.slice(0, dot) : original;
+
+  stem = stem.normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9_-]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 80);
+
+  ext = ext.replace(/[^a-zA-Z0-9.]/g, '').slice(0, 12);
+
+  return (stem || 'file') + ext;
+}
     async function archiveOperation(title, rawFiles, outputs){
       if(!currentUser) return;
       const recordId=crypto.randomUUID();
@@ -310,13 +326,13 @@
       const rawPaths=[], processedPaths=[];
       try{
         for(const file of rawFiles){
-          const path=base+'raw/'+safeFileName(file.name);
+       const path=base+'raw/'+String(rawPaths.length+1).padStart(3,'0')+'_'+safeFileName(file.name);
           const {error}=await supabaseClient.storage.from(FILE_BUCKET).upload(path,file,{upsert:false,contentType:file.type||'application/octet-stream'});
           if(error) throw error;
           rawPaths.push(path);
         }
         for(const output of outputs){
-          const path=base+'processed/'+safeFileName(output.name);
+         const path=base+'processed/'+String(processedPaths.length+1).padStart(3,'0')+'_'+safeFileName(output.name);
           const blob=output.blob instanceof Blob?output.blob:new Blob([output.content||''],{type:'text/plain;charset=utf-8'});
           const {error}=await supabaseClient.storage.from(FILE_BUCKET).upload(path,blob,{upsert:false,contentType:blob.type||'text/plain'});
           if(error) throw error;
