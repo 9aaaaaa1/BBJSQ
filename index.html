@@ -6,6 +6,7 @@
   <title>查 📱 会发财---手机号匹配提取工具</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body{font-family:sans-serif;max-width:1000px;margin:20px auto;padding:0 15px;}
     h1{margin-bottom:20px;}
@@ -20,10 +21,58 @@
     .dropzone{border:2px dashed #ccc;padding:20px;text-align:center;margin:10px 0;cursor:pointer;background:#fafafa;}
     .dropzone.dragover{background:#e3f2fd;border-color:#2196f3;}
     .hidden{display:none;}
+    .account-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 16px;padding:10px 12px;border:1px solid #ddd;border-radius:8px;background:#fafafa;font-size:14px;}
+    .account-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+    .small-btn{padding:6px 10px;margin:0;font-size:13px;}
+    .auth-mask{position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;}
+.auth-mask.hidden{display:none;}
+    .auth-card{background:#fff;border-radius:10px;padding:22px;width:min(380px,100%);box-shadow:0 8px 32px #0003;}
+    .auth-card input,.admin-panel input{box-sizing:border-box;width:100%;padding:10px;margin:7px 0;border:1px solid #ccc;border-radius:6px;}
+    .admin-panel{margin:12px 0 18px;padding:16px;border:1px solid #1a73e8;border-radius:8px;background:#f8fbff;}
+    .admin-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px;}
+    .admin-table th,.admin-table td{border-bottom:1px solid #ddd;padding:8px;text-align:left;}
+    .admin-table input{width:90px;padding:6px;margin:0;}
+    @media(max-width:600px){.admin-table{font-size:12px}.admin-table th,.admin-table td{padding:5px}}
+
   </style>
 </head>
 <body>
   <h1>📱 会发财---手机号通用匹配提取工具</h1>
+
+  <div id="accountBar" class="account-bar hidden">
+    <div>账号：<b id="userEmail">--</b>　剩余积分：<b id="creditBalance">--</b></div>
+    <div class="account-actions">
+      <button id="adminToggle" class="btn small-btn hidden" type="button">管理员后台</button>
+      <button id="logoutBtn" class="btn small-btn" type="button">退出登录</button>
+    </div>
+  </div>
+
+  <div id="authMask" class="auth-mask">
+    <div class="auth-card">
+      <h2 style="margin-top:0">账号登录</h2>
+      <p style="color:#666;font-size:14px">请使用管理员分配的账号和密码登录</p>
+      <input id="loginEmail" type="email" placeholder="邮箱 / 登录账号" autocomplete="username">
+      <input id="loginPassword" type="password" placeholder="密码" autocomplete="current-password">
+      <button id="loginBtn" class="btn" style="width:100%;margin:10px 0 0">登录</button>
+      <p id="authMessage" style="color:#c00;font-size:13px;min-height:18px"></p>
+    </div>
+  </div>
+
+  <div id="adminPanel" class="admin-panel hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <h2 style="margin:0">管理员积分管理</h2>
+      <button id="closeAdmin" class="btn small-btn" type="button">关闭后台</button>
+    </div>
+    <p style="font-size:13px;color:#555">设置每次操作扣分，并为用户充值积分。新用户需先在 Supabase 用户管理中创建账号。</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:end">
+      <label style="min-width:150px;flex:1">通用匹配每次扣分<input id="matchCost" type="number" min="0" step="1"></label>
+      <label style="min-width:150px;flex:1">号段筛选每次扣分<input id="segmentCost" type="number" min="0" step="1"></label>
+      <button id="saveCosts" class="btn" type="button">保存扣分规则</button>
+    </div>
+    <div style="margin-top:14px"><b>用户积分</b> <button id="refreshUsers" class="btn small-btn" type="button">刷新列表</button></div>
+    <div style="overflow-x:auto"><table class="admin-table"><thead><tr><th>用户</th><th>剩余积分</th><th>充值积分</th><th>操作</th></tr></thead><tbody id="userRows"><tr><td colspan="4">加载中...</td></tr></tbody></table></div>
+    <p id="adminMessage" style="font-size:13px;color:#166534"></p>
+  </div>
 
   <div class="tabs">
     <div class="tab active" onclick="showTab('matchPart', this)">通用匹配</div>
@@ -72,6 +121,107 @@
   </div>
 
   <script>
+    // ===== Supabase 配置：部署前替换为你自己的项目 URL 和 anon key =====
+    const SUPABASE_URL = 'https://tdzxaupycwozrudgnepg.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_JaOj_TzBaz3PpdWA1UzmLQ__9YOn8Sa';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let currentUser = null;
+    let isAdmin = false;
+
+    function showAuth(message=''){
+      document.getElementById('authMask').classList.remove('hidden');
+      document.getElementById('accountBar').classList.add('hidden');
+      document.getElementById('authMessage').textContent=message;
+      document.getElementById('adminPanel').classList.add('hidden');
+      document.querySelectorAll('.tabs,.card').forEach(el=>el.classList.add('hidden'));
+    }
+    function showTool(){
+      document.getElementById('authMask').classList.add('hidden');
+      document.getElementById('accountBar').classList.remove('hidden');
+      document.querySelectorAll('.tabs').forEach(el=>el.classList.remove('hidden'));
+      document.getElementById('matchPart').classList.remove('hidden');
+      document.getElementById('segmentPart').classList.add('hidden');
+      document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+    }
+    async function refreshBalance(){
+      if(!currentUser) return;
+      const {data,error}=await supabaseClient.from('profiles').select('credits').eq('id',currentUser.id).single();
+      if(error){console.error(error);return;}
+      document.getElementById('creditBalance').textContent=data.credits;
+    }
+    async function handleSession(session){
+      currentUser=session?.user||null;
+      if(!currentUser){isAdmin=false;showAuth();return;}
+      isAdmin=currentUser.app_metadata?.role==='admin';
+      document.getElementById('userEmail').textContent=currentUser.email||'已登录用户';
+      document.getElementById('adminToggle').classList.toggle('hidden',!isAdmin);
+      showTool(); await refreshBalance();
+    }
+    document.getElementById('loginBtn').addEventListener('click',async()=>{
+      const email=document.getElementById('loginEmail').value.trim();
+      const password=document.getElementById('loginPassword').value;
+      if(!email||!password){document.getElementById('authMessage').textContent='请输入账号和密码';return;}
+      const btn=document.getElementById('loginBtn');btn.disabled=true;btn.textContent='登录中...';
+      const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
+      btn.disabled=false;btn.textContent='登录';
+      if(error){document.getElementById('authMessage').textContent='登录失败：'+error.message;return;}
+      await handleSession(data.session);
+    });
+    document.getElementById('loginPassword').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginBtn').click();});
+    document.getElementById('logoutBtn').addEventListener('click',async()=>{await supabaseClient.auth.signOut();});
+    supabaseClient.auth.onAuthStateChange((_event,session)=>{handleSession(session);});
+    supabaseClient.auth.getSession().then(({data})=>handleSession(data.session));
+
+    // 扣分由数据库原子执行；前端不能自行改余额
+    async function chargeCredits(feature){
+      const {data,error}=await supabaseClient.rpc('consume_credits',{p_feature:feature});
+      if(error){alert('积分验证失败：'+error.message+'。请联系管理员。');return false;}
+      if(!data?.ok){alert(data?.message||'积分不足，请联系管理员充值。');await refreshBalance();return false;}
+      document.getElementById('creditBalance').textContent=data.balance;
+      return true;
+    }
+
+    document.getElementById('adminToggle').addEventListener('click',async()=>{
+      if(!isAdmin)return;
+      document.getElementById('adminPanel').classList.toggle('hidden');
+      if(!document.getElementById('adminPanel').classList.contains('hidden')) await loadAdminData();
+    });
+    document.getElementById('closeAdmin').addEventListener('click',()=>document.getElementById('adminPanel').classList.add('hidden'));
+    async function loadAdminData(){
+      const [{data:settings,error:sErr},{data:users,error:uErr}]=await Promise.all([
+        supabaseClient.from('credit_settings').select('feature,cost'),
+        supabaseClient.rpc('admin_list_users')
+      ]);
+      if(sErr||uErr){document.getElementById('adminMessage').textContent='加载失败：'+(sErr?.message||uErr?.message);return;}
+      const m=settings.find(x=>x.feature==='match'),s=settings.find(x=>x.feature==='segment');
+      document.getElementById('matchCost').value=m?.cost??1;
+      document.getElementById('segmentCost').value=s?.cost??1;
+      const tbody=document.getElementById('userRows');tbody.innerHTML='';
+      users.forEach(u=>{
+        const tr=document.createElement('tr');
+        const email=document.createElement('td');email.textContent=u.email||u.id;
+        const balance=document.createElement('td');balance.textContent=u.credits;
+        const amountCell=document.createElement('td');const input=document.createElement('input');input.type='number';input.min='1';input.step='1';input.placeholder='增加数量';amountCell.appendChild(input);
+        const action=document.createElement('td');const button=document.createElement('button');button.className='btn small-btn';button.textContent='充值';
+        button.addEventListener('click',async()=>{
+          const amount=Number(input.value);if(!Number.isSafeInteger(amount)||amount<=0){alert('请输入大于0的整数积分');return;}
+          button.disabled=true;
+          const {error}=await supabaseClient.rpc('admin_adjust_credits',{p_user_id:u.id,p_amount:amount,p_note:'管理员充值'});
+          button.disabled=false;
+          if(error){document.getElementById('adminMessage').textContent='充值失败：'+error.message;return;}
+          document.getElementById('adminMessage').textContent='充值成功';await loadAdminData();
+        });
+        action.appendChild(button);tr.append(email,balance,amountCell,action);tbody.appendChild(tr);
+      });
+    }
+    document.getElementById('refreshUsers').addEventListener('click',loadAdminData);
+    document.getElementById('saveCosts').addEventListener('click',async()=>{
+      const match=Number(document.getElementById('matchCost').value),segment=Number(document.getElementById('segmentCost').value);
+      if(!Number.isSafeInteger(match)||match<0||!Number.isSafeInteger(segment)||segment<0){alert('扣分必须是大于或等于0的整数');return;}
+      const {error}=await supabaseClient.rpc('admin_set_costs',{p_match_cost:match,p_segment_cost:segment});
+      document.getElementById('adminMessage').textContent=error?'保存失败：'+error.message:'扣分规则已保存';
+    });
+
     // ==== 通用函数 ====
     function showTab(id, el){
       document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
@@ -117,6 +267,7 @@
 
     // ==== 通用匹配逻辑 ====
     async function universalMatch(){
+      if(!currentUser){showAuth('请先登录');return;}
       matchedLines=[];unmatchedLines=[];
       document.getElementById('summary').textContent='正在自动识别文件类型并匹配...';
       document.getElementById('matchedBox').value='';document.getElementById('unmatchedBox').value='';
@@ -124,6 +275,7 @@
       const filesA=[...document.getElementById('fileA').files];
       const filesB=[...document.getElementById('fileB').files];
       if(filesA.length===0||filesB.length===0){alert('请先上传文件A和文件B');return;}
+      if(!(await chargeCredits('match'))) return;
 
       // 自动判断类型
       const sampleText=await readAsText(filesA[0]);
@@ -226,6 +378,7 @@
 
     // ==== 号段筛选 ====
     segmentBtn.addEventListener('click',async()=>{
+      if(!currentUser){showAuth('请先登录');return;}
       if(!segmentFile.files?.length){alert('请先选择一个TXT文件');return;}
       const text=await readAsText(segmentFile.files[0]);
       const delim=detectDelimiter(text.slice(0,2000));
@@ -233,6 +386,7 @@
       const rows=parsed.data;
       const seg=segmentInput.value.trim();
       if(!seg){alert('请输入号段');return;}
+      if(!(await chargeCredits('segment'))) return;
       let matched=[],remain=[];
       rows.forEach(r=>{
         const ph=cleanPhone(r[0]);
