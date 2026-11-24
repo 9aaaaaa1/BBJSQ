@@ -35,7 +35,405 @@
     .file-actions{display:flex;gap:6px;flex-wrap:wrap}
     .file-actions .btn{margin:2px}
     @media(max-width:600px){.admin-table{font-size:12px}.admin-table th,.admin-table td{padding:5px}}
+/* ===== 批量号段筛选美化 ===== */
+.segment-card{
+  border:1px solid #e5eaf2;
+  border-radius:16px;
+  padding:22px;
+  background:#fff;
+  box-shadow:0 5px 22px rgba(30,60,100,.05);
+}
+.segment-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:18px;
+}
+.segment-header h2{margin:0;font-size:22px;color:#172b4d}
+.segment-subtitle{color:#718096;font-size:13px;margin:7px 0 20px}
+.segment-upload{
+  border:2px dashed #b9c9df;
+  border-radius:13px;
+  padding:25px 15px;
+  text-align:center;
+  background:#f7faff;
+  cursor:pointer;
+  transition:.2s;
+}
+.segment-upload:hover{
+  border-color:#2878e8;
+  background:#eff6ff;
+}
+.segment-upload .upload-icon{font-size:30px;margin-bottom:8px}
+.segment-upload strong{display:block;color:#245da8}
+.segment-upload small{display:block;color:#8291a5;margin-top:7px}
+.segment-file-name{
+  margin-top:12px;
+  padding:10px 12px;
+  border-radius:8px;
+  background:#eef5ff;
+  color:#245da8;
+  font-size:13px;
+  overflow-wrap:anywhere;
+}
+.segment-label{
+  display:block;
+  font-weight:600;
+  margin:20px 0 9px;
+  color:#26364b;
+}
+.segment-textarea{
+  box-sizing:border-box;
+  width:100%;
+  min-height:115px;
+  padding:13px;
+  border:1px solid #d9e2ef;
+  border-radius:10px;
+  font-size:15px;
+  line-height:1.8;
+  resize:vertical;
+  outline:none;
+}
+.segment-textarea:focus{
+  border-color:#2878e8;
+  box-shadow:0 0 0 3px rgba(40,120,232,.1);
+}
+.segment-hint{font-size:12px;color:#8794a6;margin-top:7px}
+.segment-main-btn{
+  width:100%;
+  padding:14px;
+  margin:18px 0;
+  border:0;
+  border-radius:10px;
+  background:linear-gradient(135deg,#2878e8,#1556bd);
+  color:white;
+  font-size:16px;
+  font-weight:bold;
+  cursor:pointer;
+  box-shadow:0 5px 14px rgba(40,120,232,.2);
+}
+.segment-main-btn:hover{filter:brightness(1.06)}
+.segment-main-btn:disabled{opacity:.55;cursor:not-allowed}
+.segment-stats{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  margin:18px 0;
+}
+.segment-stat{
+  padding:15px 12px;
+  border:1px solid #e8edf5;
+  border-radius:12px;
+  background:#f9fbfe;
+  min-width:0;
+}
+.segment-stat span{display:block;color:#8290a3;font-size:12px}
+.segment-stat strong{display:block;font-size:23px;margin-top:7px;color:#243b5a;overflow-wrap:anywhere}
+.segment-stat.matched strong{color:#16845b}
+.segment-stat.remain strong{color:#d18a24}
+.segment-results{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  margin-top:15px;
+}
+.segment-result-card{
+  border:1px solid #e5eaf2;
+  border-radius:12px;
+  padding:15px;
+  background:#fff;
+  min-width:0;
+}
+.segment-result-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  margin-bottom:13px;
+}
+.segment-result-name{font-weight:bold;font-size:16px;color:#26364b}
+.segment-result-count{
+  color:#16845b;
+  background:#eaf8f1;
+  border-radius:20px;
+  padding:4px 9px;
+  font-size:12px;
+  white-space:nowrap;
+}
+.segment-download-btn{
+  width:100%;
+  padding:9px;
+  border:0;
+  border-radius:8px;
+  background:#eaf2ff;
+  color:#2165bd;
+  font-weight:600;
+  cursor:pointer;
+}
+.segment-download-btn:hover{background:#dceaff}
+.segment-bottom-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:18px;
+}
+.segment-bottom-actions button{
+  flex:1;
+  min-width:180px;
+  padding:12px;
+  border:1px solid #d7e1ef;
+  border-radius:9px;
+  background:#fff;
+  color:#245da8;
+  font-weight:600;
+  cursor:pointer;
+}
+.segment-bottom-actions button:disabled{
+  opacity:.4;
+  cursor:not-allowed;
+}
+.segment-message{
+  margin-top:14px;
+  padding:10px;
+  border-radius:8px;
+  background:#f2f7ff;
+  color:#315d91;
+  font-size:13px;
+  line-height:1.6;
+}
+@media(max-width:600px){
+  .segment-card{padding:15px}
+  .segment-stats{gap:7px}
+  .segment-stat{padding:12px 8px}
+  .segment-stat strong{font-size:19px}
+  .segment-results{grid-template-columns:1fr}
+  .segment-header h2{font-size:20px}
+}
+/* ===== 通用匹配 UI 美化 ===== */
+#matchPart{
+  padding:20px;
+}
 
+.match-card{
+  background:#fff;
+  border:1px solid #e5eaf2;
+  border-radius:16px;
+  padding:22px;
+  box-shadow:0 5px 22px rgba(30,60,100,.05);
+}
+
+.match-header{
+  margin-bottom:22px;
+}
+
+.match-header h2{
+  margin:0;
+  font-size:22px;
+  color:#172b4d;
+}
+
+.match-subtitle{
+  margin:8px 0 0;
+  color:#8290a3;
+  font-size:13px;
+  line-height:1.7;
+}
+
+.match-upload-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:15px;
+}
+
+.match-upload-item{
+  min-width:0;
+}
+
+.match-upload-title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:10px;
+  color:#26364b;
+  font-weight:600;
+}
+
+.match-upload-title span{
+  display:inline-flex;
+  width:27px;
+  height:27px;
+  align-items:center;
+  justify-content:center;
+  border-radius:8px;
+  background:#eaf2ff;
+  color:#2165bd;
+  font-size:13px;
+}
+
+#matchPart .dropzone{
+  box-sizing:border-box;
+  min-height:145px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  text-align:center;
+  padding:20px;
+  border:2px dashed #b9c9df;
+  border-radius:13px;
+  background:#f7faff;
+  color:#52708f;
+  font-size:14px;
+  line-height:1.8;
+  cursor:pointer;
+  transition:.2s;
+  overflow-wrap:anywhere;
+}
+
+#matchPart .dropzone:hover,
+#matchPart .dropzone.dragover{
+  border-color:#2878e8;
+  background:#eff6ff;
+  color:#2165bd;
+}
+
+.match-type-panel{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:12px;
+  margin-top:22px;
+  padding:17px;
+  border:1px solid #e5eaf2;
+  border-radius:12px;
+  background:#f9fbfe;
+}
+
+.match-type-label{
+  color:#34445a;
+  font-weight:600;
+}
+
+#matchPart #matchType{
+  min-width:180px;
+  padding:10px 12px;
+  border:1px solid #d9e2ef;
+  border-radius:8px;
+  background:white;
+  color:#26364b;
+  outline:none;
+}
+
+#matchPart .match-action-btn{
+  padding:11px 17px;
+  border:0;
+  border-radius:9px;
+  font-size:14px;
+  font-weight:600;
+  cursor:pointer;
+  transition:.2s;
+}
+
+#matchPart .match-start-btn{
+  background:linear-gradient(135deg,#2878e8,#1556bd);
+  color:white;
+  box-shadow:0 4px 12px rgba(40,120,232,.18);
+}
+
+#matchPart .match-download-btn{
+  background:#eaf2ff;
+  color:#2165bd;
+}
+
+#matchPart .match-action-btn:hover{
+  filter:brightness(.96);
+  transform:translateY(-1px);
+}
+
+#matchPart .summary{
+  margin:20px 0;
+  padding:15px 17px;
+  border:1px solid #dce9fa;
+  border-radius:11px;
+  background:#f2f7ff;
+  color:#315d91;
+  font-size:14px;
+  line-height:1.8;
+}
+
+.match-result-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:15px;
+  margin-top:20px;
+}
+
+.match-result-panel{
+  min-width:0;
+  overflow:hidden;
+  border:1px solid #e5eaf2;
+  border-radius:12px;
+  background:#fff;
+}
+
+.match-result-heading{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:14px 15px;
+  border-bottom:1px solid #edf0f5;
+  background:#fafcff;
+  color:#26364b;
+  font-weight:600;
+}
+
+.match-result-heading small{
+  color:#8794a6;
+  font-size:12px;
+  font-weight:400;
+}
+
+#matchPart .match-result-panel textarea{
+  box-sizing:border-box;
+  display:block;
+  width:100%;
+  min-height:220px;
+  margin:0;
+  padding:13px;
+  border:0;
+  border-radius:0;
+  background:#fff;
+  color:#34445a;
+  font-size:13px;
+  line-height:1.7;
+  resize:vertical;
+  outline:none;
+}
+
+@media(max-width:650px){
+  #matchPart{padding:12px}
+  .match-card{padding:15px}
+  .match-upload-grid,
+  .match-result-grid{
+    grid-template-columns:1fr;
+  }
+  .match-type-panel{
+    align-items:stretch;
+    flex-direction:column;
+  }
+  #matchPart #matchType{
+    width:100%;
+  }
+  #matchPart .match-action-btn{
+    width:100%;
+  }
+  #matchPart .dropzone{
+    min-height:120px;
+  }
+}
   </style>
 </head>
 <body>
@@ -105,45 +503,221 @@
   </div>
 
   <!-- 通用匹配区 -->
-  <div id="matchPart" class="card">
-    <h2>通用匹配</h2>
-    <div class="dropzone" id="dropA">拖拽或点击上传 文件A（支持TXT/CSV/XLSX，多文件）</div>
-    <input type="file" id="fileA" style="display:none" multiple accept=".txt,.csv,.xlsx">
-    <div class="dropzone" id="dropB">拖拽或点击上传 文件B（支持TXT/CSV/XLSX，多文件）</div>
-    <input type="file" id="fileB" style="display:none" multiple accept=".txt,.csv,.xlsx">
+<div id="matchPart" class="card">
+  <div class="match-card">
 
-    <div>
-      匹配方式：
+    <div class="match-header">
+      <h2>通用匹配</h2>
+      <p class="match-subtitle">
+        上传两组号码资料，系统自动识别文件类型并进行数据匹配。
+        支持 TXT、CSV、XLSX 文件以及多文件批量上传。
+      </p>
+    </div>
+
+    <!-- 文件上传 -->
+    <div class="match-upload-grid">
+
+      <div class="match-upload-item">
+        <div class="match-upload-title">
+          <span>A</span>
+          文件A
+        </div>
+
+        <div class="dropzone" id="dropA">
+          📁<br>
+          拖拽或点击上传文件A<br>
+          支持 TXT / CSV / XLSX，多文件
+        </div>
+
+        <input
+          type="file"
+          id="fileA"
+          style="display:none"
+          multiple
+          accept=".txt,.csv,.xlsx"
+        >
+      </div>
+
+      <div class="match-upload-item">
+        <div class="match-upload-title">
+          <span>B</span>
+          文件B
+        </div>
+
+        <div class="dropzone" id="dropB">
+          📁<br>
+          拖拽或点击上传文件B<br>
+          支持 TXT / CSV / XLSX，多文件
+        </div>
+
+        <input
+          type="file"
+          id="fileB"
+          style="display:none"
+          multiple
+          accept=".txt,.csv,.xlsx"
+        >
+      </div>
+
+    </div>
+
+    <!-- 匹配设置 -->
+    <div class="match-type-panel">
+
+      <div class="match-type-label">
+        匹配方式
+      </div>
+
       <select id="matchType">
         <option value="exact">精确匹配</option>
         <option value="fuzzy">模糊匹配（前10位）</option>
       </select>
-      <button class="btn" onclick="universalMatch()">开始匹配</button>
-      <button class="btn" onclick="downloadMatched()">下载匹配结果</button>
-      <button class="btn" onclick="downloadUnmatched()">下载未匹配数据</button>
+
+      <button
+        class="match-action-btn match-start-btn"
+        onclick="universalMatch()"
+      >
+        开始匹配
+      </button>
+
+      <button
+        class="match-action-btn match-download-btn"
+        onclick="downloadMatched()"
+      >
+        ↓ 下载匹配结果
+      </button>
+
+      <button
+        class="match-action-btn match-download-btn"
+        onclick="downloadUnmatched()"
+      >
+        ↓ 下载未匹配数据
+      </button>
+
     </div>
 
-    <div id="summary" class="summary">等待匹配...</div>
-
-    <h3>✅ 匹配结果</h3>
-    <textarea id="matchedBox">--</textarea>
-    <h3>❌ 未匹配结果</h3>
-    <textarea id="unmatchedBox">--</textarea>
-  </div>
-
-  <!-- 号段筛选区 -->
-  <div id="segmentPart" class="card hidden">
-    <h2>号段筛选功能</h2>
-    <p>上传一个 TXT 文件，并输入要筛选的号段，例如 <b>255</b>：</p>
-    <input id="segmentFile" type="file" accept=".txt,.csv" />
-    <input id="segmentInput" type="text" placeholder="输入号段 (如 255)" />
-    <div>
-      <button id="segmentBtn" class="btn">筛选号段</button>
-      <a id="downloadSegBtn" class="btn disabled" href="#">下载号段结果</a>
-      <a id="downloadRemainBtn" class="btn disabled" href="#">下载剩余号码</a>
+    <!-- 匹配状态 -->
+    <div id="summary" class="summary">
+      等待上传文件并开始匹配...
     </div>
-    <p id="segmentInfo"></p>
+
+    <!-- 匹配结果 -->
+    <div class="match-result-grid">
+
+      <div class="match-result-panel">
+        <div class="match-result-heading">
+          <span>✅ 匹配结果</span>
+          <small>符合匹配条件的数据</small>
+        </div>
+
+        <textarea id="matchedBox">--</textarea>
+      </div>
+
+      <div class="match-result-panel">
+        <div class="match-result-heading">
+          <span>❌ 未匹配结果</span>
+          <small>不符合匹配条件的数据</small>
+        </div>
+
+        <textarea id="unmatchedBox">--</textarea>
+      </div>
+
+    </div>
+
   </div>
+</div>
+
+ <!-- 批量号段筛选区 -->
+<div id="segmentPart" class="card hidden">
+  <div class="segment-card">
+
+    <div class="segment-header">
+      <div>
+        <h2>批量号段筛选</h2>
+        <p class="segment-subtitle">
+          一次上传号码资料，同时筛选多个号段，结果独立统计和下载
+        </p>
+      </div>
+    </div>
+
+    <label class="segment-upload" for="segmentFile">
+      <div class="upload-icon">📁</div>
+      <strong>点击选择或拖拽上传号码文件</strong>
+      <small>支持 TXT、CSV 文件</small>
+    </label>
+
+    <input id="segmentFile" type="file"
+      accept=".txt,.csv" style="display:none">
+
+    <div id="segmentFileName" class="segment-file-name">
+      暂未选择文件
+    </div>
+
+    <label class="segment-label" for="segmentInput">
+      输入需要筛选的多个号段
+    </label>
+
+    <textarea
+      id="segmentInput"
+      class="segment-textarea"
+      placeholder="例如：
+255
+256
+257
+258
+
+也可以用逗号分隔：255,256,257,258"
+    ></textarea>
+
+    <div class="segment-hint">
+      支持每行一个号段，也支持中文逗号、英文逗号、空格分隔
+    </div>
+
+    <button id="segmentBtn" class="segment-main-btn">
+      开始批量筛选
+    </button>
+
+    <div class="segment-stats">
+      <div class="segment-stat">
+        <span>原始号码总数</span>
+        <strong id="segmentTotal">0</strong>
+      </div>
+
+      <div class="segment-stat matched">
+        <span>匹配号码总数（去重）</span>
+        <strong id="segmentMatched">0</strong>
+      </div>
+
+      <div class="segment-stat remain">
+        <span>剩余号码</span>
+        <strong id="segmentRemain">0</strong>
+      </div>
+    </div>
+
+    <h3 style="margin-top:24px">各号段筛选结果</h3>
+
+    <div id="segmentResults" class="segment-results">
+      <p style="color:#8794a6;font-size:13px">
+        完成筛选后，这里会显示每个号段的结果。
+      </p>
+    </div>
+
+    <div class="segment-bottom-actions">
+      <button id="downloadAllSegments" disabled>
+        📥 下载全部号段结果
+      </button>
+
+      <button id="downloadRemainBtn" disabled>
+        📥 下载剩余号码
+      </button>
+    </div>
+
+    <div id="segmentInfo" class="segment-message">
+      等待上传文件并开始筛选。
+    </div>
+
+  </div>
+</div>
 
   <script>
     // ===== Supabase 配置：部署前替换为你自己的项目 URL 和 anon key =====
@@ -558,36 +1132,322 @@ function safeFileName(name){
       a.download='未匹配数据.txt';a.click();URL.revokeObjectURL(a.href);
     }
 
-    // ==== 号段筛选 ====
-    segmentBtn.addEventListener('click',async()=>{
-      if(!currentUser){showAuth('请先登录');return;}
-      if(!segmentFile.files?.length){alert('请先选择一个TXT文件');return;}
-      const text=await readAsText(segmentFile.files[0]);
-      const delim=detectDelimiter(text.slice(0,2000));
-      const parsed=Papa.parse(text,{header:false,delimiter:delim,skipEmptyLines:true});
-      const rows=parsed.data;
-      const seg=segmentInput.value.trim();
-      if(!seg){alert('请输入号段');return;}
-      if(!(await chargeCredits('segment'))) return;
-      let matched=[],remain=[];
-      rows.forEach(r=>{
-        const ph=cleanPhone(r[0]);
-        if(ph.startsWith(seg)) matched.push(r);
-        else remain.push(r);
-      });
-      const blob1=new Blob([matched.map(r=>r.join(",")).join("\n")],{type:'text/plain'});
-      const blob2=new Blob([remain.map(r=>r.join(",")).join("\n")],{type:'text/plain'});
-      downloadSegBtn.href=URL.createObjectURL(blob1);
-      downloadSegBtn.download=`segment_${seg}_${matched.length}.txt`;
-      downloadSegBtn.textContent=`下载号段结果 (${matched.length} 行)`;
-      downloadSegBtn.classList.remove('disabled');
-      downloadRemainBtn.href=URL.createObjectURL(blob2);
-      downloadRemainBtn.download=`remain_except_${seg}_${remain.length}.txt`;
-      downloadRemainBtn.textContent=`下载剩余号码 (${remain.length} 行)`;
-      downloadRemainBtn.classList.remove('disabled');
-      segmentInfo.textContent=`筛选完成：号段 ${seg} → ${matched.length} 行；剩余 ${remain.length} 行`;
-      await archiveOperation('号段筛选 '+seg+' - '+new Date().toLocaleString(),[segmentFile.files[0]],[{name:`号段结果_${seg}.txt`,content:matched.map(r=>r.join(',')).join('\n')},{name:`剩余号码_${seg}.txt`,content:remain.map(r=>r.join(',')).join('\n')}]);
+   // ===== 批量号段筛选 =====
+
+let segmentResultsData = [];
+let segmentRemainData = [];
+let segmentAllData = [];
+let segmentOriginalFile = null;
+
+// 下载 TXT 文件
+function downloadSegmentText(content, filename){
+  const blob = new Blob(
+    ['\uFEFF' + content],
+    {type:'text/plain;charset=utf-8'}
+  );
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+
+  a.href = url;
+  a.download = filename;
+
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+// 获取号段输入
+function getSegmentList(){
+  const raw = document.getElementById('segmentInput').value;
+
+  return [...new Set(
+    raw.split(/[\n\r,，、;\s]+/)
+      .map(x=>x.trim())
+      .filter(x=>/^\d+$/.test(x))
+  )];
+}
+
+// 文件选择显示
+document.getElementById('segmentFile').addEventListener('change',e=>{
+  const file=e.target.files[0];
+
+  segmentOriginalFile=file||null;
+
+  document.getElementById('segmentFileName').textContent=
+    file ? '已选择：'+file.name+'（'+
+    (file.size/1024).toFixed(1)+' KB）' : '暂未选择文件';
+});
+
+// 支持拖拽上传
+const segmentUpload=document.querySelector('.segment-upload');
+
+segmentUpload.addEventListener('dragover',e=>{
+  e.preventDefault();
+  segmentUpload.style.borderColor='#2878e8';
+  segmentUpload.style.background='#eff6ff';
+});
+
+segmentUpload.addEventListener('dragleave',()=>{
+  segmentUpload.style.borderColor='';
+  segmentUpload.style.background='';
+});
+
+segmentUpload.addEventListener('drop',e=>{
+  e.preventDefault();
+
+  segmentUpload.style.borderColor='';
+  segmentUpload.style.background='';
+
+  const file=e.dataTransfer.files[0];
+
+  if(!file)return;
+
+  if(!/\.(txt|csv)$/i.test(file.name)){
+    alert('请上传 TXT 或 CSV 文件');
+    return;
+  }
+
+  const input=document.getElementById('segmentFile');
+  const dt=new DataTransfer();
+
+  dt.items.add(file);
+  input.files=dt.files;
+  input.dispatchEvent(new Event('change'));
+});
+
+// 开始批量筛选
+document.getElementById('segmentBtn').addEventListener('click',async()=>{
+
+  if(!currentUser){
+    showAuth('请先登录');
+    return;
+  }
+
+  const file=segmentOriginalFile||
+    document.getElementById('segmentFile').files[0];
+
+  if(!file){
+    alert('请先上传号码文件');
+    return;
+  }
+
+  const segments=getSegmentList();
+
+  if(!segments.length){
+    alert('请输入有效的数字号段');
+    return;
+  }
+
+  const btn=document.getElementById('segmentBtn');
+
+  btn.disabled=true;
+  btn.textContent='正在读取和筛选...';
+
+  try{
+
+    const text=await readAsText(file);
+
+    const delim=detectDelimiter(text.slice(0,2000));
+
+    const parsed=Papa.parse(text,{
+      header:false,
+      delimiter:delim,
+      skipEmptyLines:true
     });
+
+    const rows=parsed.data;
+
+    if(!rows.length){
+      alert('文件中没有有效数据');
+      return;
+    }
+
+    // 一次批量筛选只扣一次积分
+    if(!(await chargeCredits('segment')))return;
+
+    // 每个号段独立保存结果
+    segmentResultsData=[];
+
+    segments.forEach(seg=>{
+      const matched=[];
+
+      rows.forEach((row,index)=>{
+        const phone=cleanPhone(row[0]);
+
+        if(phone.startsWith(seg)){
+          matched.push({
+            index,
+            row
+          });
+        }
+      });
+
+      segmentResultsData.push({
+        segment:seg,
+        rows:matched.map(x=>x.row),
+        count:matched.length
+      });
+    });
+
+    // 统计符合任意号段的原始行，避免重复计入总数
+    const matchedIndexes=new Set();
+
+    segmentResultsData.forEach(item=>{
+      item.rows.forEach(row=>{
+        const index=rows.indexOf(row);
+        if(index!==-1)matchedIndexes.add(index);
+      });
+    });
+
+    // 使用筛选结果的原始行序号计算去重总数
+    const matchedIndexSet=new Set();
+
+    segmentResultsData.forEach(item=>{
+      rows.forEach((row,index)=>{
+        const phone=cleanPhone(row[0]);
+        if(phone.startsWith(item.segment)){
+          matchedIndexSet.add(index);
+        }
+      });
+    });
+
+    segmentRemainData=rows.filter((row,index)=>
+      !matchedIndexSet.has(index)
+    );
+
+    const uniqueMatched=matchedIndexSet.size;
+
+    // 更新统计数字
+    document.getElementById('segmentTotal').textContent=rows.length;
+    document.getElementById('segmentMatched').textContent=uniqueMatched;
+    document.getElementById('segmentRemain').textContent=segmentRemainData.length;
+
+    // 生成每个号段的独立结果卡片
+    const resultBox=document.getElementById('segmentResults');
+    resultBox.innerHTML='';
+
+    segmentResultsData.forEach((item,index)=>{
+
+      const card=document.createElement('div');
+      card.className='segment-result-card';
+
+      const top=document.createElement('div');
+      top.className='segment-result-top';
+
+      const name=document.createElement('div');
+      name.className='segment-result-name';
+      name.textContent=item.segment+' 号段';
+
+      const count=document.createElement('span');
+      count.className='segment-result-count';
+      count.textContent=item.count+' 条';
+
+      top.append(name,count);
+
+      const download=document.createElement('button');
+      download.className='segment-download-btn';
+      download.textContent='下载该号段结果';
+
+      download.addEventListener('click',()=>{
+        downloadSegmentText(
+          item.rows.map(r=>r.join(',')).join('\n'),
+          '号段_'+item.segment+'_'+item.count+'条.txt'
+        );
+      });
+
+      card.append(top,download);
+      resultBox.appendChild(card);
+    });
+
+    // 所有号段合并下载内容
+    segmentAllData=[];
+
+    segmentResultsData.forEach(item=>{
+      segmentAllData.push(
+        '========== '+item.segment+' 号段（'+item.count+'条） =========='
+      );
+
+      item.rows.forEach(row=>{
+        segmentAllData.push(row.join(','));
+      });
+
+      segmentAllData.push('');
+    });
+
+    // 开放下载按钮
+    document.getElementById('downloadAllSegments').disabled=false;
+    document.getElementById('downloadRemainBtn').disabled=false;
+
+    document.getElementById('segmentInfo').textContent=
+      '筛选完成！共处理 '+rows.length+
+      ' 条号码，筛选 '+segments.length+
+      ' 个号段。各号段独立统计，匹配总数按原始行去重。';
+
+    // 云端归档：原文件 + 每个号段结果 + 剩余号码
+    const archiveOutputs=[];
+
+    segmentResultsData.forEach(item=>{
+      archiveOutputs.push({
+        name:'号段结果_'+item.segment+'.txt',
+        content:item.rows.map(r=>r.join(',')).join('\n')
+      });
+    });
+
+    archiveOutputs.push({
+      name:'剩余号码.txt',
+      content:segmentRemainData.map(r=>r.join(',')).join('\n')
+    });
+
+    archiveOutputs.push({
+      name:'全部号段汇总.txt',
+      content:segmentAllData.join('\n')
+    });
+
+    await archiveOperation(
+      '批量号段筛选 - '+segments.join('_')+
+      ' - '+new Date().toLocaleString(),
+      [file],
+      archiveOutputs
+    );
+
+  }catch(err){
+    console.error(err);
+    alert('筛选失败：'+err.message);
+  }finally{
+    btn.disabled=false;
+    btn.textContent='开始批量筛选';
+  }
+
+});
+
+// 下载全部号段结果
+document.getElementById('downloadAllSegments').addEventListener('click',()=>{
+  if(!segmentAllData.length){
+    alert('暂无筛选结果');
+    return;
+  }
+
+  downloadSegmentText(
+    segmentAllData.join('\n'),
+    '全部号段筛选结果.txt'
+  );
+});
+
+// 下载剩余号码
+document.getElementById('downloadRemainBtn').addEventListener('click',()=>{
+  if(!segmentResultsData.length){
+    alert('请先完成筛选');
+    return;
+  }
+
+  downloadSegmentText(
+    segmentRemainData.map(r=>r.join(',')).join('\n'),
+    '剩余号码.txt'
+  );
+});
   </script>
 </body>
 </html>
