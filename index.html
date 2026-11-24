@@ -230,16 +230,41 @@ document.getElementById('filesToggle').classList.toggle('hidden',!isAdmin);
         const tr=document.createElement('tr');
         const email=document.createElement('td');email.textContent=u.email||u.id;
         const balance=document.createElement('td');balance.textContent=u.credits;
-        const amountCell=document.createElement('td');const input=document.createElement('input');input.type='number';input.min='1';input.step='1';input.placeholder='增加数量';amountCell.appendChild(input);
-        const action=document.createElement('td');const button=document.createElement('button');button.className='btn small-btn';button.textContent='充值';
-        button.addEventListener('click',async()=>{
-          const amount=Number(input.value);if(!Number.isSafeInteger(amount)||amount<=0){alert('请输入大于0的整数积分');return;}
-          button.disabled=true;
-          const {error}=await supabaseClient.rpc('admin_adjust_credits',{p_user_id:u.id,p_amount:amount,p_note:'管理员充值'});
-          button.disabled=false;
-          if(error){document.getElementById('adminMessage').textContent='充值失败：'+error.message;return;}
-          document.getElementById('adminMessage').textContent='充值成功';await loadAdminData();
-        });
+        const amountCell=document.createElement('td');const input=document.createElement('input');input.type='number';input.step='1';input.placeholder='输入正数增加，负数扣除';amountCell.appendChild(input);
+        const action=document.createElement('td');const button=document.createElement('button');button.className='btn small-btn';button.textContent='调整积分';
+       button.addEventListener('click',async()=>{
+  const amount=Number(input.value);
+
+  if(!Number.isSafeInteger(amount)||amount===0){
+    alert('请输入非零整数，正数增加，负数扣除');
+    return;
+  }
+
+  if(amount<0 && u.credits < Math.abs(amount)){
+    alert('用户剩余积分不足，不能扣除超过当前余额的积分');
+    return;
+  }
+
+  const note=amount>0?'管理员增加积分':'管理员扣除积分';
+
+  button.disabled=true;
+
+  const {error}=await supabaseClient.rpc('admin_adjust_credits',{
+    p_user_id:u.id,
+    p_amount:amount,
+    p_note:note
+  });
+
+  button.disabled=false;
+
+  if(error){
+    document.getElementById('adminMessage').textContent='积分调整失败：'+error.message;
+    return;
+  }
+
+  document.getElementById('adminMessage').textContent='积分调整成功';
+  await loadAdminData();
+});
         action.appendChild(button);tr.append(email,balance,amountCell,action);tbody.appendChild(tr);
       });
     }
