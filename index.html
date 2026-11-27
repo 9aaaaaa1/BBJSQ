@@ -1029,17 +1029,23 @@ function safeFileName(name){
       if(filesA.length===0||filesB.length===0){alert('请先上传文件A和文件B');return;}
       if(!(await chargeCredits('match'))) return;
 
-      // 自动判断类型
-      const sampleText=await readAsText(filesA[0]);
-      const firstLine=sampleText.split(/\r?\n/)[0];
-      const firstCell=cleanPhone(firstLine.split(/,|\t/)[0]||"");
-      const isPhoneFile=/^\d{10,13}$/.test(firstCell);
 
-      if(isPhoneFile){
-        await matchMode_FileVsFile(filesA,filesB,matchType);
-      }else{
-        await matchMode_TableVsTxt(filesA,filesB);
-      }
+// 自动判断类型：CSV/XLSX 优先进入表格匹配模式
+const isTableFile = filesA.some(f =>
+  /\.(csv|xlsx)$/i.test(f.name)
+);
+
+const sampleText = await readAsText(filesA[0]);
+const firstLine = sampleText.split(/\r?\n/)[0] || "";
+const firstCell = cleanPhone(firstLine.split(/,|\t|;/)[0] || "");
+const isPhoneFile = /^\d{10,13}$/.test(firstCell);
+
+if (isTableFile || !isPhoneFile) {
+  await matchMode_TableVsTxt(filesA, filesB);
+} else {
+  await matchMode_FileVsFile(filesA, filesB, matchType);
+}
+
       await archiveOperation('通用匹配 - '+new Date().toLocaleString(),[...filesA,...filesB],[
         {name:'匹配结果.txt',content:matchedLines.join('\n')},
         {name:'未匹配数据.txt',content:unmatchedLines.join('\n')}
@@ -1087,21 +1093,36 @@ function safeFileName(name){
               phoneSet.add(ph);
             }
           }
-        }else{
-          const text=await readAsText(file);
-          const parsed=Papa.parse(text,{header:true,skipEmptyLines:true});
-          const headers=parsed.meta.fields;
-          const phoneCol=headers.find(h=>h.includes("手机号")||h.toLowerCase().includes("phone"))||headers[0];
-          parsed.data.forEach(row=>{
-            const ph=cleanPhone(row[phoneCol]);
-            if(ph){
-              if(phoneSet.has(ph)) duplicateList.push(ph);
-              phoneSet.add(ph);
-            }
-          });
-        }
-      }
 
+}else{
+  const text = await readAsText(file);
+
+  // 不使用 header:true，避免无表头 CSV 丢失第一条数据
+  const parsed = Papa.parse(text, {
+    header: false,
+    skipEmptyLines: true
+  });
+
+  const rows = parsed.data || [];
+
+  // 手机号固定在第一列
+  // 第一行第一列有手机号：无表头
+  // 第一行第一列没有手机号：有表头，跳过第一行
+  const firstPhone = cleanPhone(rows[0]?.[0]);
+  const startIndex = firstPhone ? 0 : 1;
+
+  for(let i = startIndex; i < rows.length; i++){
+    const ph = cleanPhone(rows[i]?.[0]);
+
+    if(ph){
+      if(phoneSet.has(ph)){
+        duplicateList.push(ph);
+      }
+      phoneSet.add(ph);
+    }
+  }
+}
+}
       // B组文件（TXT源）
       for(const file of filesB){
         const text=await readAsText(file);
